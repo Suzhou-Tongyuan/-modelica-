@@ -21,17 +21,11 @@
 ### 2.3 模型库使用步骤
 &emsp;&emsp;从Mohub下载Modelica.mol文件后，即可在MWORKS.Sysplorer中使用同元基础库中文版。
 1.打开Sysplorer软件，卸载Modelica标准库；
-<p align="center">
-  <img src="/mohub/resource/question/image_1745200640527.png" width="1000">
-</p>
+![卸载](assets/img.png)
 2.加载同元基础库中文版，切换至用户模型，正常使用；
-<p align="center">
-  <img src="/mohub/resource/question/image_1745564784897.png" width="1000">
-</p>
+![加载](assets/img_1.png)
 3.用户模型中的模型描述、文档浏览器界面以及参数面板界面等均完成汉化。
-<p align="center">
-  <img src="/mohub/resource/question/image_1745201684697.png" width="1000">
-</p>
+![描述](assets/img_2.png)
 
 ## 3. 未来的翻译改进方向
 
@@ -43,8 +37,6 @@
 **V0.0.1，2025-04-21 09:26**
 - 初始版本
 
-## 使用许可
-本模型库版权由[Tongyuan]版权所有，未经许可，不得用于商业用途。
 
 [Tongyuan]: <http://mohub.net/user/6/repo>
 
