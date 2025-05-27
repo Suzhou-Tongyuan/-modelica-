@@ -1,0 +1,11 @@
+﻿within Modelica.Clocked.RealSignals.Interfaces;
+partial block PartialClockedSO 
+  "带时钟单路输出实型信号的模块"
+  extends Clocked.ClockSignals.Interfaces.ClockedBlockIcon;
+
+  Modelica.Blocks.Interfaces.RealOutput y 
+    "时钟实数输出信号连接器" 
+    annotation (Placement(transformation(extent={{100,-10},{120,10}})));
+  annotation();
+
+end PartialClockedSO;

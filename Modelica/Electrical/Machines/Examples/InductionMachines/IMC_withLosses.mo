@@ -1,0 +1,262 @@
+﻿within Modelica.Electrical.Machines.Examples.InductionMachines;
+model IMC_withLosses 
+  "测试示例：带损耗的鼠笼型感应电机"
+  extends Modelica.Icons.Example;
+  constant Integer m=3 "相数";
+  import Modelica.Constants.pi;
+  import Modelica.Units.Conversions.from_rpm;
+  import Modelica.Units.Conversions.to_rpm;
+  import Modelica.Units.Conversions.from_degC;
+protected
+  parameter SI.Power PNominal=18500 "额定输出";
+  parameter SI.Voltage VNominal=400 "额定有效值电压";
+  parameter SI.Current INominal=32.85 "额定有效值电流";
+  parameter Real pfNominal=0.898 "额定功率因数";
+  parameter SI.Power PsNominal=sqrt(3)*VNominal*INominal*pfNominal "额定定子功率";
+  parameter SI.Power lossNominal=PsNominal-PNominal "额定损耗";
+  parameter Real etaNominal=0.9049 "额定效率";
+  parameter SI.Frequency fNominal=50 "额定频率";
+  parameter SI.AngularVelocity wNominal=from_rpm(1462.5) 
+    "额定转速";
+  parameter SI.Torque TNominal=PNominal/wNominal 
+    "额定转矩";
+  parameter SI.Temperature TempNominal=from_degC(90) 
+    "额定温度";
+  SI.Power Pel=electricalPowerSensor.P;
+  SI.ReactivePower Qel=electricalPowerSensor.Q;
+  SI.ApparentPower Sel=sqrt(Pel^2 + Qel^2);
+  parameter Real Ptable[:]={1E-6,1845,3549,5325,7521,9372,11010,12930, 
+      14950,16360,18500,18560,20180,22170};
+  parameter Real Itable[:]={11.0,11.20,12.27,13.87,16.41,18.78,21.07, 
+      23.92,27.05,29.40,32.85,32.95,35.92,39.35};
+  parameter Real wtable[:]=from_rpm({1500,1496,1493,1490,1486,1482,1479,1475,1471, 
+      1467,1462,1462,1458,1453});
+  parameter Real ctable[:]={0.085,0.327,0.506,0.636,0.741,0.797,0.831, 
+      0.857,0.875,0.887,0.896,0.896,0.902,0.906};
+  parameter Real etable[:]={0,0.7250,0.8268,0.8698,0.8929,0.9028,0.9064, 
+      0.9088,0.9089,0.9070,0.9044,0.9043,0.9008,0.8972};
+public
+  output SI.Power Pmech=powerSensor.power "机械输出";
+  output SI.Power Ps_sim=sqrt(3)*VNominal*I_sim*pf_sim "模拟定子功率";
+  output SI.Power Ps_meas=sqrt(3)*VNominal*I_meas*pf_meas "模拟定子功率";
+  output SI.Power loss_sim=Ps_sim-Pmech "模拟总损耗";
+  output SI.Power loss_meas=Ps_meas-Pmech "测量总损耗";
+  output SI.Current I_sim=currentQuasiRMSSensor.I "模拟电流";
+  output SI.Current I_meas=combiTable1Ds.y[1] "测量电流";
+  output SI.AngularVelocity w_sim(displayUnit="rev/min")=aimc.wMechanical "模拟转速";
+  output SI.AngularVelocity w_meas(displayUnit="rev/min")=combiTable1Ds.y[2] "测量转速";
+  output Real pf_sim=if noEvent(Sel > Modelica.Constants.small) then Pel/Sel else 0 "模拟功率因数";
+  output Real pf_meas=combiTable1Ds.y[3] "测量功率因数";
+  output Real eff_sim=if noEvent(abs(Pel) > Modelica.Constants.small) then Pmech/Pel else 0 "模拟效率";
+  output Real eff_meas=combiTable1Ds.y[4] "测量效率";
+  Machines.BasicMachines.InductionMachines.IM_SquirrelCage aimc(
+    p=aimcData.p, 
+    fsNominal=aimcData.fsNominal, 
+    Rs=aimcData.Rs, 
+    TsRef=aimcData.TsRef, 
+    alpha20s(displayUnit="1/K") = aimcData.alpha20s, 
+    Lszero=aimcData.Lszero, 
+    Lssigma=aimcData.Lssigma, 
+    Jr=aimcData.Jr, 
+    Js=aimcData.Js, 
+    frictionParameters=aimcData.frictionParameters, 
+    phiMechanical(fixed=true), 
+    statorCoreParameters=aimcData.statorCoreParameters, 
+    strayLoadParameters=aimcData.strayLoadParameters, 
+    Lm=aimcData.Lm, 
+    Lrsigma=aimcData.Lrsigma, 
+    Rr=aimcData.Rr, 
+    TrRef=aimcData.TrRef, 
+    TsOperational=TempNominal, 
+    TrOperational=TempNominal, 
+    wMechanical(fixed=true, start=2*pi*aimcData.fsNominal/aimcData.p), 
+    alpha20r=aimcData.alpha20r) 
+    annotation (Placement(transformation(extent={{-40,0},{-20,20}})));
+  Machines.Utilities.TerminalBox terminalBox(terminalConnection="D") 
+    annotation (Placement(transformation(extent={{-40,16},{-20,36}})));
+  Machines.Sensors.ElectricalPowerSensor electricalPowerSensor annotation (
+      Placement(transformation(
+        extent={{-10,-10},{10,10}}, 
+        rotation=270, 
+        origin={-30,40})));
+  Machines.Sensors.CurrentQuasiRMSSensor currentQuasiRMSSensor annotation (
+      Placement(transformation(
+        origin={-30,70}, 
+        extent={{-10,10},{10,-10}}, 
+        rotation=270)));
+  Modelica.Electrical.Polyphase.Sources.SineVoltage sineVoltage(
+    final m=m, 
+    f=fill(fNominal, m), 
+    V=fill(sqrt(2/3)*VNominal, m)) annotation (Placement(transformation(
+        origin={-70,70}, 
+        extent={{-10,-10},{10,10}}, 
+        rotation=270)));
+  Modelica.Electrical.Polyphase.Basic.Star star(final m=m) annotation (
+      Placement(transformation(
+        extent={{10,-10},{-10,10}}, 
+        rotation=90, 
+        origin={-70,30})));
+  Modelica.Electrical.Analog.Basic.Ground ground annotation (Placement(
+        transformation(
+        origin={-70,0}, 
+        extent={{-10,-10},{10,10}})));
+  Modelica.Mechanics.Rotational.Sensors.PowerSensor powerSensor 
+    annotation (Placement(transformation(extent={{-10,0},{10,20}})));
+  Modelica.Mechanics.Rotational.Components.Inertia loadInertia(J=aimcData.Jr) 
+    annotation (Placement(transformation(extent={{20,0},{40,20}})));
+  Modelica.Mechanics.Rotational.Sources.Torque torque 
+    annotation (Placement(transformation(extent={{70,0},{50,20}})));
+  Modelica.Blocks.Math.Gain gain(k=-1) 
+    annotation (Placement(transformation(extent={{50,-60},{70,-40}})));
+  Modelica.Blocks.Continuous.PI PI(
+    k=0.01, 
+    T=0.01, 
+    initType=Modelica.Blocks.Types.Init.InitialState) 
+    annotation (Placement(transformation(extent={{20,-60},{40,-40}})));
+  Modelica.Blocks.Math.Feedback feedback 
+    annotation (Placement(transformation(extent={{-10,-40},{10,-60}})));
+  Modelica.Blocks.Sources.Ramp ramp(
+    height=1.2*PNominal, 
+    offset=0, 
+    startTime=4.5, 
+    duration=5.5) 
+    annotation (Placement(transformation(extent={{-40,-60},{-20,-40}})));
+  Modelica.Blocks.Tables.CombiTable1Ds combiTable1Ds(table={{Ptable[j], 
+        Itable[j],wtable[j],ctable[j],etable[j]} for j in 1:size(Ptable, 
+        1)}, smoothness=Modelica.Blocks.Types.Smoothness.ContinuousDerivative) 
+    annotation (Placement(transformation(extent={{20,-30},{40,-10}})));
+  parameter Utilities.ParameterRecords.IM_SquirrelCageData aimcData(
+    statorCoreParameters(PRef=410, VRef=387.9), 
+    Jr=0.12, 
+    Rs=0.56, 
+    alpha20s(displayUnit="1/K")=Modelica.Electrical.Machines.Thermal.Constants.alpha20Copper, 
+    Lssigma=1.52/(2*pi*fNominal), 
+    frictionParameters(PRef=180, wRef=wNominal), 
+    strayLoadParameters(
+      PRef=0.005*sqrt(3)*VNominal*INominal*pfNominal, 
+      IRef=INominal/sqrt(3), 
+      wRef=wNominal), 
+    Lm=66.4/(2*pi*fNominal), 
+    Lrsigma=2.31/(2*pi*fNominal), 
+    Rr=0.42, 
+    alpha20r(displayUnit="1/K")=Modelica.Electrical.Machines.Thermal.Constants.alpha20Aluminium)   "感应电机数据" 
+    annotation (Placement(transformation(extent={{-40,-30},{-20,-10}})));
+
+
+initial equation
+  aimc.i_0_s = 0;
+  der(aimc.idq_sr) = zeros(2);
+  der(aimc.idq_rr) = zeros(2);
+equation
+  connect(star.pin_n, ground.p) 
+    annotation (Line(points={{-70,20},{-70,10}}, color={0,0,255})); // 将星形连接到接地
+  connect(sineVoltage.plug_n, star.plug_p) 
+    annotation (Line(points={{-70,60},{-70,40}}, color={0,0,255})); // 将正弦电压连接到星形
+  connect(terminalBox.plug_sn, aimc.plug_sn) annotation (Line(
+      points={{-36,20},{-36,20}}, 
+      color={0,0,255})); // 将端子盒连接到感应电机的插头 sn
+  connect(terminalBox.plug_sp, aimc.plug_sp) annotation (Line(
+      points={{-24,20},{-24,20}}, 
+      color={0,0,255})); // 将端子盒连接到感应电机的插头 sp
+  connect(currentQuasiRMSSensor.plug_n, electricalPowerSensor.plug_p) 
+    annotation (Line(
+      points={{-30,60},{-30,57.5},{-30,57.5},{-30,55},{-30,50},{-30,50}}, 
+      color={0,0,255})); // 将电流伪有效值传感器连接到电力传感器的插头 p
+
+  connect(electricalPowerSensor.plug_nv, star.plug_p) annotation (Line(
+      points={{-40,40},{-70,40}}, 
+      color={0,0,255})); // 将电力传感器的负载端口连接到星形端口 p
+
+
+ connect(electricalPowerSensor.plug_ni, terminalBox.plugSupply) annotation (Line(
+      points={{-30,30},{-30,22}}, 
+      color={0,0,255})); // 将电力传感器的电流端口连接到端子盒的供电端口
+
+  connect(aimc.flange, powerSensor.flange_a) annotation (Line(
+      points={{-20,10},{-10,10}})); // 将感应电机的轴连接到功率传感器的轴 a
+  connect(powerSensor.flange_b, loadInertia.flange_a) annotation (Line(
+      points={{10,10},{20,10}})); // 将功率传感器的轴 b 连接到惯性负载的轴 a
+  connect(torque.flange, loadInertia.flange_b) annotation (Line(
+      points={{50,10},{40,10}})); // 将扭矩的轴连接到惯性负载的轴 b
+  connect(gain.y, torque.tau) annotation (Line(
+      points={{71,-50},{80,-50},{80,10},{72,10}}, 
+      color={0,0,127})); // 将增益的输出连接到扭矩的输入
+  connect(sineVoltage.plug_p, currentQuasiRMSSensor.plug_p) annotation (
+      Line(
+      points={{-70,80},{-30,80}}, 
+      color={0,0,255})); // 将正弦电压的正极连接到电流伪有效值传感器的正极
+  connect(powerSensor.power, feedback.u2) annotation (Line(
+      points={{-8,-1},{-8,-20},{0,-20},{0,-42}}, 
+      color={0,0,127})); // 将功率传感器的功率连接到反馈的 u2 端
+  connect(feedback.y, PI.u) annotation (Line(
+      points={{9,-50},{18,-50}}, 
+      color={0,0,127})); // 将反馈的输出连接到 PI 控制器的输入
+  connect(PI.y, gain.u) annotation (Line(
+      points={{41,-50},{48,-50}}, 
+      color={0,0,127})); // 将 PI 控制器的输出连接到增益的输入
+  connect(ramp.y, feedback.u1) annotation (Line(
+      points={{-19,-50},{-8,-50}}, 
+      color={0,0,127})); // 将坡度的输出连接到反馈的 u1 端
+  connect(powerSensor.power, combiTable1Ds.u) annotation (Line(
+      points={{-8,-1},{-8,-20},{18,-20}}, 
+      color={0,0,127})); // 将功率传感器的功率连接到组合表的输入端
+  annotation (
+    experiment(StopTime=5.0, Interval=1E-4, Tolerance=1e-06), 
+    Documentation(info="<html>
+<ul>
+<li>模拟5秒钟：开始机器，建立机器中的磁通。</li>
+<li>继续模拟额外的5秒钟：然后施加负载坡道。</li>
+<li>通过与Pmech的曲线比较：</li>
+</ul>
+<table>
+<tr><td>电流         </td><td>I_sim   </td><td>I_meas  </td></tr>
+<tr><td>转速         </td><td>w_sim   </td><td>w_meas  </td></tr>
+<tr><td>功率因数     </td><td>pf_sim  </td><td>pf_meas </td></tr>
+<tr><td>效率         </td><td>eff_sim </td><td>eff_meas</td></tr>
+</table>
+<p>机器参数取自标准的 18.5 kW 400 V 50 Hz 电机，模拟结果与测量进行比较。</p>
+<table>
+<tr><td>额定定子电流                    </td><td>     32.85  </td><td>A      </td></tr>
+<tr><td>功率因数                      </td><td>      0.898 </td><td>       </td></tr>
+<tr><td>转速                             </td><td>   1462.5   </td><td>rpm    </td></tr>
+<tr><td>电气输入                  </td><td> 20,443.95  </td><td>W      </td></tr>
+<tr><td>定子铜损耗              </td><td>    770.13  </td><td>W      </td></tr>
+<tr><td>定子铁芯损耗                </td><td>    410.00  </td><td>W      </td></tr>
+<tr><td>转子铜损耗              </td><td>    481.60  </td><td>W      </td></tr>
+<tr><td>杂散负载损耗                 </td><td>    102.22  </td><td>W      </td></tr>
+<tr><td>摩擦损耗                   </td><td>    180.00  </td><td>W      </td></tr>
+<tr><td>机械输出                 </td><td> 18,500.00  </td><td>W      </td></tr>
+<tr><td>效率                        </td><td>     90.49  </td><td>%      </td></tr>
+<tr><td>额定扭矩                   </td><td>    120.79  </td><td>Nm     </td></tr>
+</table>
+<br>
+<table>
+<tr><td>定子电阻       </td><td>  0.56     </td><td>&Omega;</td></tr>
+<tr><td>温度系数           </td><td> 铜    </td><td>       </td></tr>
+<tr><td>参考温度             </td><td> 20        </td><td>&deg;C </td></tr>
+<tr><td>操作温度             </td><td> 90        </td><td>&deg;C </td></tr>
+<tr><td>定子漏阻抗</td><td>  1.52     </td><td>&Omega;</td></tr>
+<tr><td>主磁场漏阻抗</td><td> 66.40     </td><td>&Omega;</td></tr>
+<tr><td>转子漏阻抗</td><td>  2.31     </td><td>&Omega;</td></tr>
+<tr><td>转子电阻       </td><td>  0.42     </td><td>&Omega;</td></tr>
+<tr><td>温度系数           </td><td> 铝 </td><td>       </td></tr>
+<tr><td>参考温度             </td><td> 20        </td><td>&deg;C </td></tr>
+<tr><td>操作温度             </td><td> 90        </td><td>&deg;C </td></tr>
+</table>
+<p>参考：<br>
+Anton Haumer, Christian Kral, Hansj&ouml;rg Kapeller, Thomas B&auml;uml, Johannes V. Gragger<br>
+<a href=\"https://2009.international.conference.modelica.org/proceedings/pages/papers/0103/0103_FI.pdf\">
+The AdvancedMachines Library: Loss Models for Electric Machines</a><br>
+Modelica 2009, 7<sup>th</sup> International Modelica Conference</p>
+</html>"), 
+    Diagram(coordinateSystem(preserveAspectRatio=false, extent={{-100,-100}, 
+            {100,100}}), graphics={Text(
+                extent={{-72,100},{68,80}}, 
+                textColor={0,0,255}, 
+                textString= 
+            "模拟5秒钟，开始机器。"),Text(
+                extent={{-100,-80},{100,-100}}, 
+                textColor={0,0,255}, 
+                textString= 
+            "继续模拟额外的5秒钟：施加负载坡道。")}));
+end IMC_withLosses;

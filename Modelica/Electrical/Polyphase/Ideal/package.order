@@ -1,0 +1,12 @@
+﻿IdealDiode
+IdealThyristor
+IdealGTOThyristor
+IdealCommutingSwitch
+IdealIntermediateSwitch
+IdealTransformer
+Idle
+Short
+IdealOpeningSwitch
+IdealClosingSwitch
+OpenerWithArc
+CloserWithArc

@@ -1,0 +1,5 @@
+﻿StateSpace
+TransferFunction
+PI
+MovingAverage
+FIRbyCoefficients
